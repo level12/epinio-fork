@@ -25,7 +25,7 @@ spec:
         {{- if $process.routes }}
         ports:
         - name: http
-          containerPort: 8080
+          containerPort: {{ include "epinio-multiprocess.appListeningPort" $ }}
           protocol: TCP
         readinessProbe:
           tcpSocket:

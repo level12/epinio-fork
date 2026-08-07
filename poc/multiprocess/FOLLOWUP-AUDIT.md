@@ -41,6 +41,16 @@ The only reproduction-instruction correction was to export
 copy. Raw outputs remain only on the validation VM and were not added to the
 fork or this trial directory.
 
+### Post-reproduction port compatibility
+
+Chart `0.2.3` restores the standard Epinio `appListeningPort` setting that the
+initial multi-process chart had accidentally replaced with a hardcoded 8080.
+The chart keeps 8080 as its backward-compatible default and accepts port 80 for
+Pretix. Uncached focused Go tests and the static Helm suite passed both renders,
+Kubernetes client-side dry-runs, chart packaging, and AppChart server-side
+dry-run validation. Live port-80 application behavior is intentionally left to
+the Pretix trial.
+
 ## Audit method
 
 The audit treated the earlier README as unverified and inspected:
@@ -190,12 +200,12 @@ The separate `multiprocess-audit` rollback capture ended at revision 6 and recor
 
 ## Current cluster state
 
-- `multiprocess-audit3`: Helm revision 8 deployed with experimental chart `0.2.2`, staged web `2/2`, worker `3/3`, CronJob active, Certificate Ready. The final working tree remains the fully matrix-tested chart `0.2.1` because the `0.2.2` long-name experiment was incomplete.
+- `multiprocess-audit3`: Helm revision 8 deployed with experimental chart `0.2.2`, staged web `2/2`, worker `3/3`, CronJob active, Certificate Ready. Chart `0.2.1` was the fully matrix-tested retained tree at audit time; current chart `0.2.3` adds only restored listening-port configurability and related static coverage.
 - `multiprocess-audit2`: earlier chart `0.2.0` audit release retained for comparison.
 - `multiprocess-audit`: Helm revision 6 deployed at restored v2 state; its App CR still contains failed v4 desired intent for inspection.
 - `multiprocess-poc`: original development release remains deployed for historical comparison.
 - The 63-character long-name probe left an App CR with failed desired v1 intent; its atomic initial install was uninstalled and produced no successful application release.
-- The Epinio server is the rebuilt `v0.0.0-dev` POC binary. The cluster's served chart and AppChart cache key remain experimental `0.2.2`/`?v=audit-3`; running `scripts/install-chart.sh` restores the final-tree `0.2.1`/`?v=audit-2` package.
+- The Epinio server is the rebuilt `v0.0.0-dev` POC binary. The original audit cluster's served chart and AppChart cache key remain experimental `0.2.2`/`?v=audit-3`; running the current `scripts/install-chart.sh` installs chart `0.2.3` with cache key `?v=0.2.3`.
 
 All repository changes are intentionally uncommitted.
 

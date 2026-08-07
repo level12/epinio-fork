@@ -14,6 +14,14 @@
 {{- .Values.epinio.appName | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 
+{{/*
+Application listening port. Keep the standard Epinio chart's 8080 default and
+its appListeningPort customization contract.
+*/}}
+{{- define "epinio-multiprocess.appListeningPort" -}}
+{{ default 8080 (default (dict "appListeningPort" "8080") .Values.userConfig).appListeningPort }}
+{{- end -}}
+
 {{- define "epinio-multiprocess.labels" -}}
 app.kubernetes.io/managed-by: epinio
 app.kubernetes.io/part-of: {{ .root.Release.Namespace | quote }}
@@ -74,7 +82,7 @@ command:
 {{- end }}
 env:
 - name: PORT
-  value: "8080"
+  value: {{ include "epinio-multiprocess.appListeningPort" .root | quote }}
 - name: EPINIO_PROCESS
   value: {{ .name | quote }}
 {{- range .root.Values.epinio.env }}

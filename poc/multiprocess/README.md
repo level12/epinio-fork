@@ -81,6 +81,16 @@ K3s kubeconfig first:
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 ```
 
+The chart retains Epinio's standard application-port setting and defaults to
+8080. For an image such as Pretix that listens on port 80, include this in the
+application manifest:
+
+```yaml
+configuration:
+  settings:
+    appListeningPort: 80
+```
+
 Install cert-manager first so its CRDs exist before the Epinio and POC Certificate resources are applied:
 
 ```bash
@@ -185,7 +195,7 @@ The final complete matrix used chart `0.2.1`, a fresh application named `multipr
 
 The final staged command is `/cnb/lifecycle/launcher` with `--` plus the declared process command in `args`. Earlier development revisions 7 and 9 of the original `multiprocess-poc` release failed with two incomplete CNB command strategies; their Helm hook manifests remain inspectable, but the deleted pod logs do not. They are therefore development history, not part of the passing evidence matrix.
 
-After that matrix, an experimental chart `0.2.2` added hashed overlength resource names. A normal-name live upgrade to revision 8 passed in 13.85s, including the release hook, web/worker replicas, CronJob, Certificate, and Service response (`evidence/chart-0.2.2-live/`). A separate 63-character application-name probe then failed atomically because Kubernetes limits CronJob names to 52 characters (`evidence/long-name-live/push.log`). The incomplete long-name change is not in the final working tree; chart `0.2.1` remains the reproducible POC and long process/application-name collision handling is an explicit gap. The cluster still contains the experimental revision 8, and the chart server still serves the experimental `0.2.2` archive, for inspection.
+After that matrix, an experimental chart `0.2.2` added hashed overlength resource names. A normal-name live upgrade to revision 8 passed in 13.85s, including the release hook, web/worker replicas, CronJob, Certificate, and Service response (`evidence/chart-0.2.2-live/`). A separate 63-character application-name probe then failed atomically because Kubernetes limits CronJob names to 52 characters (`evidence/long-name-live/push.log`). The incomplete long-name change is not in the retained tree; chart `0.2.1` is the version used for the complete behavioral matrix and long process/application-name collision handling remains an explicit gap. Current chart `0.2.3` builds on that retained tree and restores the standard Epinio `appListeningPort` setting for images such as Pretix that do not listen on 8080. The cluster used for the original audit still contains experimental revision 8 for inspection.
 
 ## Verification
 
@@ -195,7 +205,7 @@ All non-acceptance Go packages pass:
 go list ./... | rg -v '/acceptance($|/)' | xargs go test -count=1
 ```
 
-`scripts/verify-static.sh` passed focused Go tests, Helm lint, exact prebuilt/staged resource assertions, Kubernetes client-side dry runs, and `git diff --check`; rendering explicitly covered `replicas: 0`. The retained `evidence/static/verification.log` was subsequently overwritten by the experimental `0.2.2` naming run, so it is not claimed as an exact final-tree rerun. The application Go code did not change afterward, the complete live matrix used the final `0.2.1` chart, and the final post-reconciliation check was limited to `git diff --check` at the user's direction. The broader Go run is in `evidence/non-acceptance-go-test.log`.
+`scripts/verify-static.sh` passed focused Go tests, Helm lint, exact prebuilt/staged resource assertions, Kubernetes client-side dry runs, and `git diff --check`; rendering explicitly covered `replicas: 0`. The retained `evidence/static/verification.log` was subsequently overwritten by the experimental `0.2.2` naming run, so it is not claimed as an exact final-tree rerun. The application Go code did not change afterward, and the complete live matrix used chart `0.2.1`. For chart `0.2.3`, the focused Go tests were rerun uncached and the static suite additionally rendered, asserted, and client-side dry-ran both the default port 8080 and overridden port 80 cases. The chart packaged successfully and the AppChart passed Kubernetes server-side dry-run validation. The broader historical Go run is in `evidence/non-acceptance-go-test.log`.
 
 At audit completion, `multiprocess-audit3` revision 8 remained deployed with the experimental chart `0.2.2`, staged web `2/2`, worker `3/3`, a staged CronJob, successful staged migration Job, ready Certificate, and TLS Ingress. The complete behavioral matrix immediately preceding it used the final-tree chart `0.2.1`. During that matrix, application traffic was proven through a Kubernetes Service port-forward because the then-current baseline listened on 8000/8443. A subsequent infrastructure validation moved Cilium to 80/443, restarted the operator, agent, and Envoy, and verified both direct Epinio CLI access and the staged application response over standard HTTPS without a port-forward or TLS bridge. The earlier limitation was therefore baseline port configuration, not the chart's route or Cilium's `ClusterIP` ingress Service.
 

@@ -11,4 +11,8 @@ metadata:
 spec:
   shortDescription: Multi-process application POC
   description: Deployment, cron, and release processes in one Epinio Helm release
-  helmChart: http://multiprocess-chart.epinio.svc.cluster.local/chart.tgz?v=audit-2
+  helmChart: http://multiprocess-chart.epinio.svc.cluster.local/chart.tgz?v=0.2.3
+  settings:
+    appListeningPort:
+      type: integer
+      minimum: "0"

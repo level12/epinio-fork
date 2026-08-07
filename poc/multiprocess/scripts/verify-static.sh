@@ -11,6 +11,7 @@ mkdir -p "$output_dir"
 prebuilt="$output_dir/prebuilt.yaml"
 staged="$output_dir/staged.yaml"
 zero="$output_dir/zero-replicas.yaml"
+port_80="$output_dir/listening-port-80.yaml"
 
 assert_contains() {
   local pattern=$1
@@ -33,10 +34,19 @@ assert_count() {
   fi
 }
 
+assert_not_contains() {
+  local pattern=$1
+  local file=$2
+  if rg --quiet --multiline "$pattern" "$file"; then
+    echo "ASSERTION FAILED: unexpected pattern [$pattern] found in $file" >&2
+    return 1
+  fi
+}
+
 cd "$repo_root"
 
 echo "[go] focused packages"
-go test \
+go test -count=1 \
   ./pkg/api/core/v1/models \
   ./internal/manifest \
   ./internal/application \
@@ -48,6 +58,7 @@ helm lint "$chart" -f "$values"
 helm template audit "$chart" --namespace poc -f "$values" >"$prebuilt"
 helm template audit "$chart" --namespace poc -f "$values" --set epinio.staged=true >"$staged"
 helm template audit "$chart" --namespace poc -f "$values" --set epinio.processes.worker.replicas=0 >"$zero"
+helm template audit "$chart" --namespace poc -f "$values" --set userConfig.appListeningPort=80 >"$port_80"
 
 echo "[render] resource and semantic assertions"
 assert_count 2 '^kind: Deployment$' "$prebuilt"
@@ -66,10 +77,17 @@ assert_contains 'secretName: "multiprocess-poc-multiprocess-poc-tls"' "$prebuilt
 assert_contains 'image: docker.io/epinio-poc/multiprocess:v1.*\n        imagePullPolicy: IfNotPresent.*\n        command:\n          - python' "$prebuilt"
 assert_count 4 '"/cnb/lifecycle/launcher"' "$staged"
 assert_count 4 '^[[:space:]]+- "--"$' "$staged"
+assert_contains 'containerPort: 8080' "$prebuilt"
+assert_count 4 'value: "8080"' "$prebuilt"
+assert_contains 'containerPort: 80' "$port_80"
+assert_not_contains 'containerPort: 8080' "$port_80"
+assert_count 4 'value: "80"' "$port_80"
+assert_contains 'port: 8080\n[[:space:]]+protocol: TCP\n[[:space:]]+targetPort: http' "$port_80"
 
 echo "[kubernetes] client-side schema dry runs"
 kubectl create --dry-run=client -f "$prebuilt" -o name >"$output_dir/prebuilt-dry-run.txt"
 kubectl create --dry-run=client -f "$staged" -o name >"$output_dir/staged-dry-run.txt"
+kubectl create --dry-run=client -f "$port_80" -o name >"$output_dir/listening-port-80-dry-run.txt"
 
 echo "[git] whitespace check"
 git diff --check

@@ -9,7 +9,7 @@ trap 'rm -rf "$package_dir"' EXIT
 
 cd "$repo_root"
 helm package poc/multiprocess/chart --destination "$package_dir"
-chart_archive="$package_dir/epinio-multiprocess-poc-0.2.1.tgz"
+chart_archive="$package_dir/epinio-multiprocess-poc-0.2.3.tgz"
 
 kubectl -n "$namespace" create configmap multiprocess-chart \
   --from-file=chart.tgz="$chart_archive" \
