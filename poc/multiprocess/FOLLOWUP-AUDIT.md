@@ -12,6 +12,35 @@ The production assessment remains **feasible but invasive**. The Helm boundary w
 
 This audit does not certify the POC as production-ready. In particular, migration side effects and CronJob executions are not rollbackable, Epinio's App CR diverges from the deployed Helm revision after failure, and the authoritative CRD module/schema was not versioned or migrated.
 
+## Independent clean reproduction
+
+On 2026-08-07 UTC, fork branch `poc/multiprocess-apps` at
+`0c5438d974f0a37ee5f5a7763a72c14df69a3f15` was cloned into a new
+`epinio-trial-02.exe.xyz` VM copied from baseline revision `2026-08-06.4`.
+Nothing was copied from the original Epinio POC VM.
+
+The README installation produced Epinio chart `1.14.1`, installed the committed
+server and CRD changes, and installed POC AppChart `0.2.1` with a verified chart
+archive checksum. The final-tree static script passed all focused Go tests,
+Helm lint/render assertions, zero-replica rendering, Kubernetes client-side dry
+runs, and `git diff --check`.
+
+The fresh `multiprocess-repro` application passed the seven-revision live
+matrix: initial v1, v2 upgrade with worker scaling from two to three, successful
+migrations and controller-created cron executions, failed migration with exit
+42 and atomic rollback, unhealthy-worker timeout and atomic rollback with the
+candidate fully scaled down, and direct source staging/deployment. Revision 7
+finished with staged web `2/2`, worker `3/3`, a staged CronJob and successful
+release Job. Direct HTTPS ingress returned
+`web version=staged-v5 process=web`, plain HTTP returned 301, and neither a
+port-forward nor local TLS bridge was active. Cilium, its operator, Envoy, and
+Hubble Relay remained healthy.
+
+The only reproduction-instruction correction was to export
+`KUBECONFIG=/etc/rancher/k3s/k3s.yaml` for Helm and the scripts on a baseline
+copy. Raw outputs remain only on the validation VM and were not added to the
+fork or this trial directory.
+
 ## Audit method
 
 The audit treated the earlier README as unverified and inspected:

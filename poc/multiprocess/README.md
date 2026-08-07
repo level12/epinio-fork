@@ -74,6 +74,13 @@ The upstream App CRD types live in the separate `github.com/epinio/application` 
 
 The commands below assume a working Kubernetes context, Docker, Helm, and the Epinio source checkout. Replace the domain/IP for another cluster.
 
+On a VM copied from `paas-k3s-base.exe.xyz`, point Helm and the scripts at the
+K3s kubeconfig first:
+
+```bash
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+```
+
 Install cert-manager first so its CRDs exist before the Epinio and POC Certificate resources are applied:
 
 ```bash
